@@ -3,28 +3,28 @@ const testimonials = [
   {
     id: 1,
     name: 'Aylin',
-    image: 'https://drive.google.com/file/d/1GMeTfObBjhONO-yIIeSldY-JHKZtzCnV/view?usp=sharing',
+    image: 'https://drive.google.com/file/d/1GMeTfObBjhONO-yIIeSldY-JHKZtzCnV/view',
     comment: 'Su rapidez de convertir mis textos a voz es muy rápido...',
     rating: 5
   },
   {
     id: 2,
     name: 'Aida',
-    image: 'https://drive.google.com/file/d/1ry7JM0EjTb7vFhaHbZnba31hbfNzUZtO/view?usp=sharing',
+    image: 'https://drive.google.com/file/d/1ry7JM0EjTb7vFhaHbZnba31hbfNzUZtO/view',
     comment: 'Recomiendo a LYRA 100%.',
     rating: 5
   },
   {
     id: 3,
     name: 'Natalia',
-    image: 'https://drive.google.com/file/d/1uz-lR6yT0jookLcnjDxNNWPc4w2wDlOw/view?usp=sharing',
+    image: 'https://drive.google.com/file/d/1uz-lR6yT0jookLcnjDxNNWPc4w2wDlOw/view',
     comment: 'Excelente servicio, muy fácil de usar.',
     rating: 5
   },
   {
     id: 4,
     name: 'Vanessa',
-    image: 'https://drive.google.com/file/d/1iHNPk0ztM1K6iknRMeS5aT_oyXIzOVPY/view?usp=sharing',
+    image: 'https://drive.google.com/file/d/1iHNPk0ztM1K6iknRMeS5aT_oyXIzOVPY/view',
     comment: 'Muy intuitivo y fácil de navegar.',
     rating: 5
   }
