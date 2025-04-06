@@ -7,7 +7,7 @@ const AboutUs = () => {
         <div className="flex flex-col md:flex-row items-center justify-center gap-12">
           <div className="w-full md:w-1/3">
             <div className="flex justify-center">
-            <img src="/imagenes/logo.png" style="with:50%;" alt="logotipo" />
+            <img src="/imagenes/logo.png" alt="logotipo" />
             </div>
           </div>
           <div className="w-full md:w-2/3">

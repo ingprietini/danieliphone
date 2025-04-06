@@ -385,7 +385,7 @@ const Converter = () => {
 
   const currentService = conversionServices.find(service => service.id === activeService) || conversionServices[0];
   const acceptedExtensions = getAcceptedFileExtensions(activeService);
- 
+
   return (
     <div className="py-16 bg-black min-h-screen">
       <div className="container mx-auto px-4">
