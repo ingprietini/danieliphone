@@ -385,14 +385,14 @@ const Converter = () => {
 
   const currentService = conversionServices.find(service => service.id === activeService) || conversionServices[0];
   const acceptedExtensions = getAcceptedFileExtensions(activeService);
-
+ 
   return (
     <div className="py-16 bg-black min-h-screen">
       <div className="container mx-auto px-4">
         <h2 className="text-4xl font-bold text-center mb-12">
           <span className="mr-2">
             <img 
-              src="/lovable-uploads/a76511af-df1a-4ac4-81ea-4eb0f69957a3.png" 
+              src="/imagenes/a76511af-df1a-4ac4-81ea-4eb0f69957a3.png" 
               alt="LYRA logo" 
               className="h-12 w-12 inline-block align-text-bottom"
             />
