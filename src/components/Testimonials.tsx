@@ -3,28 +3,28 @@ const testimonials = [
   {
     id: 1,
     name: 'Aylin',
-    image: '/imagenes/Aylin.jpg',
-    comment: 'Su rapidez de convertir mis textos a voz es muy rápido.',
+    image: './imagenes/Aylin.jpg',
+    comment: 'Su rapidez de convertir mis textos a voz es muy rápido...',
     rating: 5
   },
   {
     id: 2,
     name: 'Aida',
-    image: '/imagenes/Aida.jpg',
+    image: './imagenes/Aida.jpg',
     comment: 'Recomiendo a LYRA 100%.',
     rating: 5
   },
   {
     id: 3,
     name: 'Natalia',
-    image: '/imagenes/Natalia.jpg',
+    image: './imagenes/Natalia.jpg',
     comment: 'Excelente servicio, muy fácil de usar.',
     rating: 5
   },
   {
     id: 4,
     name: 'Vanessa',
-    image: '/imagenes/Vanessa.jpg',
+    image: './imagenes/Vanessa.jpg',
     comment: 'Muy intuitivo y fácil de navegar.',
     rating: 5
   }
