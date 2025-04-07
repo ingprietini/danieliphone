@@ -6,7 +6,7 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row justify-between">
           <div className="mb-8 md:mb-0">
             <div className="flex items-center">
-            <img src="/imagenes/logo.png" alt="logotipo" />
+            <img src="/imagenes/logo.png" alt="" />
               <span className="ml-2 font-bold text-xl">LYRA</span>
             </div>
             <p className="mt-4 text-gray-400 max-w-xs">

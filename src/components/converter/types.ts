@@ -6,4 +6,7 @@ export type Conversion = {
   serviceType: string;
   fileName?: string;
   audioData?: ArrayBuffer;
+  fromWebSpeech?: boolean;
+  audioDuration?: number;
+  audioUrl?: string; // New property to store blob URL
 };

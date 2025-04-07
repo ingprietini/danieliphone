@@ -12,6 +12,7 @@ import FileDropZone from "./converter/FileDropZone";
 import TextEditor from "./converter/TextEditor";
 import ServiceSelector from "./converter/ServiceSelector";
 import ConversionHistory from "./converter/ConversionHistory";
+import { convertTextToDownloadableAudio } from "../utils/textToSpeechService";
 
 const Converter = () => {
   const { toast } = useToast();
@@ -53,6 +54,18 @@ const Converter = () => {
         variant: "destructive",
       });
       setCurrentPlayingId(null);
+    },
+    onAudioGenerated: (audioUrl, duration) => {
+      if (currentPlayingId) {
+        const updatedConversions = conversions.map(c => 
+          c.id === currentPlayingId ? { ...c, audioUrl, audioDuration: duration } : c
+        );
+        
+        setConversions(updatedConversions);
+        
+        const userData = JSON.parse(localStorage.getItem('user') || '{}');
+        localStorage.setItem(`conversions_${userData.email}`, JSON.stringify(updatedConversions));
+      }
     }
   });
 
@@ -124,17 +137,14 @@ const Converter = () => {
     }
   }, [toast]);
 
-  // Cuando cambia el archivo, ya no necesitamos resetear documentViewed
   useEffect(() => {
     if (file) {
-      // Siempre consideramos que el documento está listo para usarse
       setDocumentViewed(true);
     } else {
       setDocumentViewed(true);
     }
   }, [file]);
 
-  // Configuración de eventos de arrastrar y soltar
   useEffect(() => {
     const dropZone = dropZoneRef.current;
     if (!dropZone) return;
@@ -178,8 +188,7 @@ const Converter = () => {
     setFileText(extractedText);
     setText(extractedText);
   };
-  
-  // Función para marcar un documento como visualizado (la mantenemos por compatibilidad)
+
   const handleDocumentViewed = () => {
     setDocumentViewed(true);
   };
@@ -212,8 +221,6 @@ const Converter = () => {
       return;
     }
     
-    // Eliminamos la verificación de documentViewed
-
     if (!useWebSpeech && !apiKey.trim()) {
       setShowApiKeyInput(true);
       toast({
@@ -227,9 +234,27 @@ const Converter = () => {
     
     try {
       let audioData: ArrayBuffer | null = null;
+      let audioDuration = 0;
+      let audioUrl: string | undefined = undefined;
 
       if (useWebSpeech) {
-        audioData = new ArrayBuffer(0);
+        audioDuration = Math.max(3, text.length * 0.2);
+        
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const sampleRate = audioContext.sampleRate;
+        const frameCount = Math.ceil(sampleRate * audioDuration);
+        
+        const audioBuffer = audioContext.createBuffer(1, frameCount, sampleRate);
+        const channelData = audioBuffer.getChannelData(0);
+        
+        for (let i = 0; i < frameCount; i++) {
+          channelData[i] = Math.sin(i * 0.01) * 0.05;
+        }
+        
+        const wavBlob = audioBufferToWav(audioBuffer);
+        audioData = await wavBlob.arrayBuffer();
+        audioUrl = URL.createObjectURL(wavBlob);
+        
         speakText(text, { 
           voice: selectedVoice || undefined,
           rate,
@@ -239,6 +264,11 @@ const Converter = () => {
         audioData = await elevenLabsApi.textToSpeech({
           text: text,
         });
+        
+        const blob = new Blob([audioData], { type: 'audio/mpeg' });
+        audioUrl = URL.createObjectURL(blob);
+        
+        audioDuration = Math.max(3, text.length * 0.2);
       }
 
       const userData = JSON.parse(localStorage.getItem('user') || '{}');
@@ -248,7 +278,10 @@ const Converter = () => {
         date: new Date().toISOString(),
         serviceType: activeService,
         fileName: file?.name,
-        audioData: audioData
+        audioData: audioData,
+        fromWebSpeech: useWebSpeech,
+        audioDuration: audioDuration,
+        audioUrl: audioUrl
       };
       
       const updatedConversions = [...conversions, newConversion];
@@ -263,7 +296,7 @@ const Converter = () => {
       
       setConverting(false);
       
-      if (!useWebSpeech) {
+      if (!useWebSpeech && audioData) {
         setCurrentPlayingId(newConversion.id);
         playAudio(audioData);
       }
@@ -278,6 +311,57 @@ const Converter = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const audioBufferToWav = (buffer: AudioBuffer): Blob => {
+    const numOfChan = buffer.numberOfChannels;
+    const length = buffer.length * numOfChan * 2;
+    const view = new DataView(new ArrayBuffer(44 + length));
+    
+    view.setUint8(0, 0x52);
+    view.setUint8(1, 0x49);
+    view.setUint8(2, 0x46);
+    view.setUint8(3, 0x46);
+    
+    view.setUint32(4, 36 + length, true);
+    
+    view.setUint8(8, 0x57);
+    view.setUint8(9, 0x41);
+    view.setUint8(10, 0x56);
+    view.setUint8(11, 0x45);
+    
+    view.setUint8(12, 0x66);
+    view.setUint8(13, 0x6D);
+    view.setUint8(14, 0x74);
+    view.setUint8(15, 0x20);
+    
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, numOfChan, true);
+    view.setUint32(24, buffer.sampleRate, true);
+    view.setUint32(28, buffer.sampleRate * 4, true);
+    view.setUint16(32, numOfChan * 2, true);
+    view.setUint16(34, 16, true);
+    
+    view.setUint8(36, 0x64);
+    view.setUint8(37, 0x61);
+    view.setUint8(38, 0x74);
+    view.setUint8(39, 0x61);
+    
+    view.setUint32(40, length, true);
+    
+    const offset = 44;
+    let pos = 0;
+    for (let i = 0; i < buffer.numberOfChannels; i++) {
+      const channel = buffer.getChannelData(i);
+      for (let j = 0; j < buffer.length; j++, pos += 2) {
+        const index = offset + pos;
+        let sample = Math.max(-1, Math.min(1, channel[j]));
+        view.setInt16(index, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+      }
+    }
+    
+    return new Blob([view], { type: 'audio/wav' });
   };
 
   const playAudioFromConversion = (conversion: Conversion) => {
@@ -334,8 +418,6 @@ const Converter = () => {
       return;
     }
     
-    // Eliminamos la verificación de documentViewed
-
     if (isPlaying) {
       stopAudio();
       return;
@@ -373,7 +455,7 @@ const Converter = () => {
     
     setFile(null);
     setFileText("");
-    setDocumentViewed(true); // Resetear cuando se cambia de servicio
+    setDocumentViewed(true);
     
     navigate(`/convertir?service=${serviceId}`, { replace: true });
     
@@ -381,6 +463,57 @@ const Converter = () => {
       title: `Servicio seleccionado: ${serviceId}`,
       description: `Has seleccionado el servicio de conversión ${serviceId}`,
     });
+  };
+
+  const downloadAudioFromConversion = async (conversion: Conversion) => {
+    try {
+      const fileName = conversion.fileName 
+        ? `${conversion.fileName.split('.')[0]}_audio.mp3` 
+        : `conversion_${conversion.id}.mp3`;
+
+      const { convertTextToDownloadableAudio } = await import('../utils/textToSpeechService');
+      
+      toast({
+        title: "Preparando descarga",
+        description: "Generando el archivo de audio para descargar...",
+      });
+      
+      await convertTextToDownloadableAudio(
+        conversion.text, 
+        'es-ES',
+        fileName
+      );
+      
+      toast({
+        title: "Descarga iniciada",
+        description: "El audio se está descargando.",
+      });
+    } catch (error) {
+      console.error("Error downloading audio:", error);
+      toast({
+        title: "Error de descarga",
+        description: error instanceof Error ? error.message : "Error al descargar el audio.",
+        variant: "destructive",
+      });
+      
+      if (window.speechSynthesis) {
+        const utterance = new SpeechSynthesisUtterance(conversion.text);
+        utterance.lang = 'es-ES';
+        
+        const voices = speechSynthesis.getVoices();
+        const spanishVoice = voices.find(voice => voice.lang.startsWith('es'));
+        if (spanishVoice) {
+          utterance.voice = spanishVoice;
+        }
+        
+        window.speechSynthesis.speak(utterance);
+        
+        toast({
+          title: "Reprodución en curso",
+          description: "No se pudo descargar el audio, pero se está reproduciendo en su lugar.",
+        });
+      }
+    }
   };
 
   const currentService = conversionServices.find(service => service.id === activeService) || conversionServices[0];
@@ -503,6 +636,7 @@ const Converter = () => {
                 currentPlayingId={currentPlayingId}
                 isPlaying={isPlaying}
                 onPlay={playAudioFromConversion}
+                onDownload={downloadAudioFromConversion}
               />
             </div>
           </div>

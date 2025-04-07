@@ -2,7 +2,6 @@
 import { Button } from "../ui/button";
 import { Play, Pause, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Textarea } from "../ui/textarea";
 
 type TextEditorProps = {
   text: string;
