@@ -7,7 +7,7 @@ const Hero = () => {
       <div className="container mx-auto text-center">
         <div className="flex justify-center mb-6">
           <img 
-            src="/imagenes/a76511af-df1a-4ac4-81ea-4eb0f69957a3.png" 
+            src="/iamgenes/a76511af-df1a-4ac4-81ea-4eb0f69957a3.png" 
             alt="LYRA logo" 
             className="h-24 w-24"
           />

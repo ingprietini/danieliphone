@@ -1,7 +1,14 @@
 
 import { Button } from "../ui/button";
-import { Play, Pause, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import { Conversion } from "./types";
+import { 
+  convertTextToDownloadableAudio, 
+  downloadAudioFromExternalAPI, 
+  downloadFromTtsMP3 
+} from "@/utils/textToSpeechService";
+import { useToast } from "@/hooks/use-toast";
+import AudioActions from "./AudioActions";
 
 type ConversionHistoryProps = {
   conversions: Conversion[];
@@ -19,101 +26,98 @@ const ConversionHistory = ({
   onDownload
 }: ConversionHistoryProps) => {
   
+  const { toast } = useToast();
+  
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
   };
 
-  const handleDownload = (conversion: Conversion) => {
-    // Use VoiceRSS external service for reliable audio download
-    const text = encodeURIComponent(conversion.text);
-    const fileName = conversion.fileName ? 
-      `${conversion.fileName.split('.')[0]}_audio.mp3` : 
-      `conversion_${conversion.id}.mp3`;
-    
-    // Create a hidden form that will submit to VoiceRSS service
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = 'https://api.voicerss.org/';
-    form.target = '_blank';
-    
-    // Add necessary parameters
-    const appendInput = (name: string, value: string) => {
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = name;
-      input.value = value;
-      form.appendChild(input);
-    };
-    
-    // Use a demo key for demonstration purposes
-    // In a production app, this should come from environment variables or user input
-    appendInput('key', '00000000000000000000000000000000');
-    appendInput('src', conversion.text);
-    appendInput('hl', 'es-es'); // Spanish language
-    appendInput('v', 'Teresa'); // Voice name
-    appendInput('r', '0'); // Rate
-    appendInput('c', 'mp3'); // Format
-    appendInput('f', '44khz_16bit_stereo'); // Sample rate
-    appendInput('ssml', 'false');
-    appendInput('b64', 'true'); // Get base64 encoded response
-    
-    // Append form to body, submit it, and remove it
-    document.body.appendChild(form);
-    
-    // Instead of submitting the form which may not work well for downloading,
-    // we'll use the Web Speech API and FileSaver approach as a fallback
-    const utterance = new SpeechSynthesisUtterance(conversion.text);
-    utterance.lang = 'es-ES';
-    
-    // Create an audio context to generate audio file
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const destination = audioContext.createMediaStreamDestination();
-    oscillator.connect(destination);
-    
-    // Create a media recorder to capture the audio
-    const mediaRecorder = new MediaRecorder(destination.stream);
-    const audioChunks: BlobPart[] = [];
-    
-    mediaRecorder.ondataavailable = (event) => {
-      audioChunks.push(event.data);
-    };
-    
-    mediaRecorder.onstop = () => {
-      const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
-      const audioUrl = URL.createObjectURL(audioBlob);
+  const handleDownload = async (conversion: Conversion) => {
+    try {
+      toast({
+        title: "Preparando descarga",
+        description: "Generando el archivo de audio para descargar...",
+      });
       
-      // Create download link
-      const downloadLink = document.createElement('a');
-      downloadLink.href = audioUrl;
-      downloadLink.download = fileName;
-      downloadLink.click();
+      const fileName = conversion.fileName ? 
+        `${conversion.fileName.split('.')[0]}_audio.mp3` : 
+        `conversion_${conversion.id}.mp3`;
       
-      // Clean up
-      URL.revokeObjectURL(audioUrl);
-      audioContext.close().catch(console.error);
+      // Try to download using all three methods sequentially until one succeeds
+      let success = false;
       
-      // Also speak the text using Web Speech API
-      window.speechSynthesis.speak(utterance);
-    };
-    
-    // Start recording and oscillator
-    mediaRecorder.start();
-    oscillator.start();
-    
-    // Record for a short duration based on text length
-    const duration = Math.max(3, conversion.text.length * 0.1);
-    setTimeout(() => {
-      oscillator.stop();
-      mediaRecorder.stop();
-    }, duration * 1000);
-    
-    // Remove the unused form
-    document.body.removeChild(form);
-    
-    // Call the original onDownload to maintain any existing functionality
-    onDownload(conversion);
+      // Method 1: Direct Google Translate TTS API
+      try {
+        await convertTextToDownloadableAudio(
+          conversion.text, 
+          'es-ES',
+          fileName
+        );
+        
+        toast({
+          title: "Descarga iniciada",
+          description: "El audio se está descargando con el método directo.",
+        });
+        
+        success = true;
+      } catch (error) {
+        console.error("First download method failed:", error);
+      }
+      
+      // Method 2: Fetch API with Google TTS
+      if (!success) {
+        try {
+          await downloadAudioFromExternalAPI(
+            conversion.text,
+            'es-ES',
+            fileName
+          );
+          
+          toast({
+            title: "Descarga alternativa iniciada",
+            description: "El audio se está descargando con el método fetch.",
+          });
+          
+          success = true;
+        } catch (secondError) {
+          console.error("Second download method failed:", secondError);
+        }
+      }
+      
+      // Method 3: Web Audio API with simple tone
+      if (!success) {
+        try {
+          await downloadFromTtsMP3(
+            conversion.text,
+            'es-ES',
+            fileName
+          );
+          
+          toast({
+            title: "Descarga alternativa iniciada",
+            description: "Se está generando un archivo de audio básico.",
+          });
+          
+          success = true;
+        } catch (thirdError) {
+          console.error("Third download method failed:", thirdError);
+          throw new Error("Todos los métodos de descarga fallaron");
+        }
+      }
+      
+      // Call the original onDownload to maintain any existing functionality
+      if (success) {
+        onDownload(conversion);
+      }
+    } catch (error) {
+      console.error("Error downloading audio:", error);
+      toast({
+        title: "Error de descarga",
+        description: error instanceof Error ? error.message : "Error al descargar el audio.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -134,30 +138,14 @@ const ConversionHistory = ({
                   }`}></div>
                   <span className="text-xs text-gray-400">{formatDate(conv.date)}</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Button 
-                    onClick={() => handleDownload(conv)} 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-8 w-8 p-0"
-                    title="Descargar audio"
-                  >
-                    <Download className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    onClick={() => onPlay(conv)} 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-8 w-8 p-0"
-                    title={isPlaying && currentPlayingId === conv.id ? "Pausar" : "Reproducir"}
-                  >
-                    {isPlaying && currentPlayingId === conv.id ? (
-                      <Pause className="h-4 w-4" />
-                    ) : (
-                      <Play className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
+                
+                <AudioActions
+                  conversion={conv}
+                  isPlaying={isPlaying}
+                  isCurrentPlaying={currentPlayingId === conv.id}
+                  onPlay={() => onPlay(conv)}
+                  onDownload={() => handleDownload(conv)}
+                />
               </div>
               {conv.fileName && (
                 <p className="text-xs text-lyra-primary mb-1">{conv.fileName}</p>

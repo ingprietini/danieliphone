@@ -1,3 +1,22 @@
+# Welcome to your coito project
+
+## Project info
+
+**URL**: https://coito.dev/projects/ffc46adf-d249-42dd-900a-9704058e0c59
+
+## How can I edit this code?
+
+There are several ways of editing your application.
+
+**Use coito**
+
+Simply visit the [coito Project](https://coito.dev/projects/ffc46adf-d249-42dd-900a-9704058e0c59) and start prompting.
+
+Changes made via coito will be committed automatically to this repo.
+
+**Use your preferred IDE**
+
+If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in coito.
 
 The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
@@ -40,3 +59,15 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+
+## How can I deploy this project?
+
+Simply open [coito](https://coito.dev/projects/ffc46adf-d249-42dd-900a-9704058e0c59) and click on Share -> Publish.
+
+## Can I connect a custom domain to my coito project?
+
+Yes it is!
+
+To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+
+Read more here: [Setting up a custom domain](https://docs.coito.dev/tips-tricks/custom-domain#step-by-step-guide)

@@ -28,7 +28,7 @@ const Navbar = () => {
         <Link to="/" className="text-white">
           <div className="flex items-center">
             <img 
-              src="/imagenes/a76511af-df1a-4ac4-81ea-4eb0f69957a3.png" 
+              src="/iamgenes/a76511af-df1a-4ac4-81ea-4eb0f69957a3.png" 
               alt="LYRA logo" 
               className="h-8 w-8"
             />

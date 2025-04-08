@@ -525,7 +525,7 @@ const Converter = () => {
         <h2 className="text-4xl font-bold text-center mb-12">
           <span className="mr-2">
             <img 
-              src="/imagenes/a76511af-df1a-4ac4-81ea-4eb0f69957a3.png" 
+              src="/iamgenes/a76511af-df1a-4ac4-81ea-4eb0f69957a3.png" 
               alt="LYRA logo" 
               className="h-12 w-12 inline-block align-text-bottom"
             />
